@@ -26,6 +26,7 @@ import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
 public class EstudanteViewModel extends ViewModel {
+
     private final MutableLiveData<List<Estudante>> estudantesLiveData = new MutableLiveData<>();
     private final MutableLiveData<String> errorLiveData = new MutableLiveData<>();
     private final MutableLiveData<Estudante> selectedEstudanteLiveData = new MutableLiveData<>();
@@ -38,22 +39,22 @@ public class EstudanteViewModel extends ViewModel {
     private EstudanteRepository repository;
 
     public EstudanteViewModel() {
-        // Inicializa o Retrofit
         Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl("https://10.0.2.2:8080/estudantes/")
+                .baseUrl("https://10.0.2.2:8080/")
                 .addConverterFactory(GsonConverterFactory.create())
                 .client(obterOkHttpClientInseguro())
                 .build();
+
         repository = retrofit.create(EstudanteRepository.class);
         startBusca();
     }
 
-    public LiveData<List<Estudante>> getEstudantes() {
-        return estudantesLiveData;
-    }
-
     public LiveData<String> getError() {
         return errorLiveData;
+    }
+
+    public LiveData<List<Estudante>> getEstudantes() {
+        return estudantesLiveData;
     }
 
     public LiveData<Estudante> getSelectedEstudante() {
@@ -77,7 +78,7 @@ public class EstudanteViewModel extends ViewModel {
     }
 
     private void startBusca() {
-        errorLiveData.setValue("Download começando...");
+        errorLiveData.setValue("Iniciando download…");
         Call<List<Estudante>> call = repository.buscarEstudantes();
         call.enqueue(new Callback<List<Estudante>>() {
             @Override
@@ -90,7 +91,6 @@ public class EstudanteViewModel extends ViewModel {
                     estudantesLiveData.setValue(new ArrayList<>());
                 }
             }
-
             @Override
             public void onFailure(Call<List<Estudante>> call, Throwable t) {
                 errorLiveData.setValue("Falha na conexão: " + t.getMessage());
@@ -189,7 +189,7 @@ public class EstudanteViewModel extends ViewModel {
 
     private static OkHttpClient obterOkHttpClientInseguro() {
         try {
-            final TrustManager[] trustAllCerts = new TrustManager[] {
+            final TrustManager[] trustAllCerts = new TrustManager[]{
                     new X509TrustManager() {
                         @Override public void checkClientTrusted(java.security.cert.X509Certificate[] chain, String authType) {}
                         @Override public void checkServerTrusted(java.security.cert.X509Certificate[] chain, String authType) {}

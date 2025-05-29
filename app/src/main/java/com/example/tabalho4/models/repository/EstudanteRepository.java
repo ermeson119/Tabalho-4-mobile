@@ -13,13 +13,13 @@ import retrofit2.http.PUT;
 import retrofit2.http.Path;
 
 public interface EstudanteRepository {
-    @GET("estudantes")
+    @GET("estudantes/")
     Call<List<Estudante>> buscarEstudantes();
 
     @GET("estudantes/{id}")
     Call<Estudante> buscarEstudantePorId(@Path("id") int id);
 
-    @POST("estudantes")
+    @POST("estudantes/")
     Call<Estudante> criarEstudante(@Body Estudante estudante);
 
     @PUT("estudantes/{id}")
