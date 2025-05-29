@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/mobile_navigation"
+    app:startDestination="@id/nav_home">
+
+    <fragment
+        android:id="@+id/nav_home"
+        android:name="com.example.tabalho4.ui.home.HomeFragment"
+        android:label="Listagem de Alunos" />
+
+    <fragment
+        android:id="@+id/nav_dados_estudante"
+        android:name="com.example.tabalho4.ui.DadosEstudante.DadosEstudanteFragment"
+        android:label="Detalhes do Aluno">
+        <argument
+            android:name="estudanteId"
+            app:argType="integer"
+            android:defaultValue="-1" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/nav_estatistica_estudantes"
+        android:name="com.example.tabalho4.ui.estatisticaEstudantes.EstatisticaEstudantesFragment"
+        android:label="Estatística" />
+
+    <fragment
+        android:id="@+id/nav_cadastrar_estudante"
+        android:name="com.example.tabalho4.ui.cadastrarEstudante.CadastrarEstudanteFragment"
+        android:label="Cadastrar Aluno" />
+
+</navigation>
