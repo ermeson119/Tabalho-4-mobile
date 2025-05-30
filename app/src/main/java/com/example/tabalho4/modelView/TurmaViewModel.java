@@ -7,102 +7,168 @@ import androidx.lifecycle.ViewModel;
 
 import com.example.tabalho4.models.entity.Estudante;
 import com.example.tabalho4.models.entity.Turma;
+import com.example.tabalho4.models.repository.EstudanteRepositoryUltils;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class TurmaViewModel extends ViewModel {
-    private final MutableLiveData<Double> mediaTurmaLiveData    = new MutableLiveData<>();
-    private final MutableLiveData<Double> mediaIdadeLiveData   = new MutableLiveData<>();
-    private final MutableLiveData<String> maiorMediaLiveData   = new MutableLiveData<>();
-    private final MutableLiveData<String> menorMediaLiveData   = new MutableLiveData<>();
-    private final MutableLiveData<List<Estudante>> aprovadosLiveData  = new MutableLiveData<>();
+    private final MutableLiveData<List<Estudante>> estudantesCompletosLiveData = new MutableLiveData<>();
+    private final MutableLiveData<Float> mediaTurmaLiveData = new MutableLiveData<>();
+    private final MutableLiveData<Float> mediaIdadeLiveData = new MutableLiveData<>();
+    private final MutableLiveData<Estudante> maiorMediaLiveData = new MutableLiveData<>();
+    private final MutableLiveData<Estudante> menorMediaLiveData = new MutableLiveData<>();
+    private final MutableLiveData<List<Estudante>> aprovadosLiveData = new MutableLiveData<>();
     private final MutableLiveData<List<Estudante>> reprovadosLiveData = new MutableLiveData<>();
-    private final MutableLiveData<String> errorLiveData        = new MutableLiveData<>();
+    private final MutableLiveData<String> errorLiveData = new MutableLiveData<>();
 
     private final EstudanteViewModel estudanteViewModel;
-    private final Turma turma = new Turma(new ArrayList<>());
-
-    // Observer definido como campo para podermos removê-lo depois
-    private final Observer<List<Estudante>> estudantesObserver = this::onEstudantesChanged;
+    private final EstudanteRepositoryUltils repositoryEstudante = new EstudanteRepositoryUltils();
+    private final ExecutorService executorService = Executors.newSingleThreadExecutor();
+    private final Observer<List<Estudante>> estudantesObserver = this::buscaDadosCompletosEstudantes;
 
     public TurmaViewModel() {
         this.estudanteViewModel = new EstudanteViewModel();
-        // registra o observer
         estudanteViewModel.getEstudantes().observeForever(estudantesObserver);
     }
 
-    public LiveData<Double> getMediaTurma()   { return mediaTurmaLiveData; }
-    public LiveData<Double> getMediaIdade()   { return mediaIdadeLiveData; }
-    public LiveData<String> getMaiorMedia()   { return maiorMediaLiveData; }
-    public LiveData<String> getMenorMedia()   { return menorMediaLiveData; }
-    public LiveData<List<Estudante>> getAprovados()  { return aprovadosLiveData; }
-    public LiveData<List<Estudante>> getReprovados() { return reprovadosLiveData; }
-    public LiveData<String> getError()        { return errorLiveData; }
+    public LiveData<List<Estudante>> getEstudantesCompletos() {
+        return estudantesCompletosLiveData;
+    }
 
-    private void onEstudantesChanged(List<Estudante> estudantes) {
-        if (estudantes != null && !estudantes.isEmpty()) {
+    public LiveData<Float> getMediaTurma() {
+        return mediaTurmaLiveData;
+    }
+
+    public LiveData<Float> getMediaIdade() {
+        return mediaIdadeLiveData;
+    }
+
+    public LiveData<Estudante> getMaiorMedia() {
+        return maiorMediaLiveData;
+    }
+
+    public LiveData<Estudante> getMenorMedia() {
+        return menorMediaLiveData;
+    }
+
+    public LiveData<List<Estudante>> getAprovados() {
+        return aprovadosLiveData;
+    }
+
+    public LiveData<List<Estudante>> getReprovados() {
+        return reprovadosLiveData;
+    }
+
+    public LiveData<String> getError() {
+        return errorLiveData;
+    }
+
+    private void buscaDadosCompletosEstudantes(List<Estudante> estudantes) {
+        executorService.execute(() -> {
             try {
-                double totalMedia    = 0;
-                double totalIdade    = 0;
-                double maiorMedia    = Double.MIN_VALUE;
-                double menorMedia    = Double.MAX_VALUE;
-                Estudante emMaior     = null;
-                Estudante emMenor     = null;
-                List<Estudante> aprov = new ArrayList<>();
-                List<Estudante> reprov = new ArrayList<>();
+                if (estudantes != null && !estudantes.isEmpty()) {
+                    List<Estudante> estudantesCompletos = new ArrayList<>();
+                    CountDownLatch contageRegressiva = new CountDownLatch(estudantes.size());
 
-                for (Estudante e : estudantes) {
-                    double m = turma.calcularMedia(e);
-                    double f = turma.calcularFrequencia(e);
-                    totalMedia += m;
-                    totalIdade += e.getIdade();
+                    for (Estudante estudante : estudantes) {
+                        Call<Estudante> call = repositoryEstudante.buscarEstudantePorId(estudante.getId());
+                        call.enqueue(new Callback<Estudante>() {
+                            @Override
+                            public void onResponse(Call<Estudante> call, Response<Estudante> response) {
+                                try {
+                                    if (response.isSuccessful() && response.body() != null) {
+                                        synchronized (estudantesCompletos) {
+                                            estudantesCompletos.add(response.body());
+                                        }
+                                    } else {
+                                        errorLiveData.postValue("Erro ao buscar estudante " + estudante.getId() + ": " + response.code());
+                                    }
+                                } finally {
+                                    contageRegressiva.countDown();
+                                }
+                            }
 
-                    if (m > maiorMedia) {
-                        maiorMedia = m;
-                        emMaior = e;
+                            @Override
+                            public void onFailure(Call<Estudante> call, Throwable t) {
+                                errorLiveData.postValue("Erro ao buscar estudante " + estudante.getId() + ": " + t.getMessage());
+                                contageRegressiva.countDown();
+                            }
+                        });
                     }
-                    if (m < menorMedia) {
-                        menorMedia = m;
-                        emMenor = e;
+
+                    try {
+                        contageRegressiva.await(); // Aguarda todas as chamadas serem concluídas
+                    } catch (InterruptedException e) {
+                        errorLiveData.postValue("Erro ao esperar respostas: " + e.getMessage());
+                        return;
                     }
 
-                    if (m >= 7.0 && f >= 75.0) aprov.add(e);
-                    else reprov.add(e);
+                    if (estudantesCompletos.isEmpty()) {
+                        errorLiveData.postValue("Erro: Nenhum estudante carregado");
+                        mediaTurmaLiveData.postValue(0f);
+                        mediaIdadeLiveData.postValue(0f);
+                        maiorMediaLiveData.postValue(null);
+                        menorMediaLiveData.postValue(null);
+                        aprovadosLiveData.postValue(new ArrayList<>());
+                        reprovadosLiveData.postValue(new ArrayList<>());
+                    } else {
+                        estudantesCompletosLiveData.postValue(estudantesCompletos);
+                        calcularEstatisticasTurma(estudantesCompletos);
+                    }
+                } else {
+                    errorLiveData.postValue("Erro: Lista de estudantes vazia ou nula");
+                    mediaTurmaLiveData.postValue(0f);
+                    mediaIdadeLiveData.postValue(0f);
+                    maiorMediaLiveData.postValue(null);
+                    menorMediaLiveData.postValue(null);
+                    aprovadosLiveData.postValue(new ArrayList<>());
+                    reprovadosLiveData.postValue(new ArrayList<>());
                 }
-
-                double avgM = totalMedia / estudantes.size();
-                double avgI = totalIdade / estudantes.size();
-
-                mediaTurmaLiveData.postValue(avgM);
-                mediaIdadeLiveData.postValue(avgI);
-                maiorMediaLiveData.postValue(
-                        String.format("%s (%.2f)", emMaior != null ? emMaior.getNome() : "N/A", maiorMedia)
-                );
-                menorMediaLiveData.postValue(
-                        String.format("%s (%.2f)", emMenor != null ? emMenor.getNome() : "N/A", menorMedia)
-                );
-                aprovadosLiveData.postValue(aprov);
-                reprovadosLiveData.postValue(reprov);
-
-            } catch (Exception ex) {
-                errorLiveData.postValue("Erro ao calcular estatísticas: " + ex.getMessage());
+            } catch (Exception e) {
+                errorLiveData.postValue("Erro ao buscar dados completos: " + e.getMessage());
             }
-        } else {
-            // sem dados: zera tudo
-            mediaTurmaLiveData.postValue(0.0);
-            mediaIdadeLiveData.postValue(0.0);
-            maiorMediaLiveData.postValue("N/A");
-            menorMediaLiveData.postValue("N/A");
-            aprovadosLiveData.postValue(new ArrayList<>());
-            reprovadosLiveData.postValue(new ArrayList<>());
+        });
+    }
+
+    private void calcularEstatisticasTurma(List<Estudante> estudantesCompletos) {
+        Turma turma = new Turma(estudantesCompletos);
+        try {
+            float mediaTurma = turma.calcularMediaTurma();
+            mediaTurmaLiveData.postValue(mediaTurma);
+
+            float mediaIdade = turma.calcularMediaIdade();
+            mediaIdadeLiveData.postValue(mediaIdade);
+
+            Estudante maiorMedia = turma.alunoMaiorMedia();
+            maiorMediaLiveData.postValue(maiorMedia);
+
+            Estudante menorMedia = turma.alunoMenorMedia();
+            menorMediaLiveData.postValue(menorMedia);
+
+            List<Estudante> aprovados = turma.getAprovados();
+            aprovadosLiveData.postValue(aprovados);
+
+            List<Estudante> reprovados = turma.getReprovados();
+            reprovadosLiveData.postValue(reprovados);
+        } catch (Exception e) {
+            errorLiveData.postValue("Erro ao calcular estatísticas: " + e.getMessage());
         }
     }
 
     @Override
     protected void onCleared() {
-        // remove o observer para evitar vazamento
         estudanteViewModel.getEstudantes().removeObserver(estudantesObserver);
+        if (!executorService.isShutdown()) {
+            executorService.shutdownNow();
+        }
         super.onCleared();
     }
 }

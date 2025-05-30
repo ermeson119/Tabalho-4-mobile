@@ -1,29 +1,22 @@
 package com.example.tabalho4.modelView;
 
+import android.util.Log;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
 import com.example.tabalho4.models.entity.Estudante;
 import com.example.tabalho4.models.entity.Turma;
-import com.example.tabalho4.models.repository.EstudanteRepository;
+import com.example.tabalho4.models.repository.EstudanteRepositoryUltils;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSocketFactory;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
-
-import okhttp3.OkHttpClient;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
-import retrofit2.Retrofit;
-import retrofit2.converter.gson.GsonConverterFactory;
 
 public class EstudanteViewModel extends ViewModel {
 
@@ -36,16 +29,10 @@ public class EstudanteViewModel extends ViewModel {
     private final MutableLiveData<Boolean> cadastroSucessoLiveData = new MutableLiveData<>();
 
     private final ExecutorService executorService = Executors.newSingleThreadExecutor();
-    private EstudanteRepository repository;
+    private final EstudanteRepositoryUltils estudanteRepositoryUltils;
 
     public EstudanteViewModel() {
-        Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl("https://10.0.2.2:8080/")
-                .addConverterFactory(GsonConverterFactory.create())
-                .client(obterOkHttpClientInseguro())
-                .build();
-
-        repository = retrofit.create(EstudanteRepository.class);
+        estudanteRepositoryUltils = new EstudanteRepositoryUltils();
         startBusca();
     }
 
@@ -79,7 +66,7 @@ public class EstudanteViewModel extends ViewModel {
 
     private void startBusca() {
         errorLiveData.setValue("Iniciando download…");
-        Call<List<Estudante>> call = repository.buscarEstudantes();
+        Call<List<Estudante>> call = estudanteRepositoryUltils.buscarEstudantes();
         call.enqueue(new Callback<List<Estudante>>() {
             @Override
             public void onResponse(Call<List<Estudante>> call, Response<List<Estudante>> response) {
@@ -91,6 +78,7 @@ public class EstudanteViewModel extends ViewModel {
                     estudantesLiveData.setValue(new ArrayList<>());
                 }
             }
+
             @Override
             public void onFailure(Call<List<Estudante>> call, Throwable t) {
                 errorLiveData.setValue("Falha na conexão: " + t.getMessage());
@@ -105,7 +93,7 @@ public class EstudanteViewModel extends ViewModel {
 
     public void estudanteSelecionadoId(int id) {
         executorService.execute(() -> {
-            Call<Estudante> call = repository.buscarEstudantePorId(id);
+            Call<Estudante> call = estudanteRepositoryUltils.buscarEstudantePorId(id);
             call.enqueue(new Callback<Estudante>() {
                 @Override
                 public void onResponse(Call<Estudante> call, Response<Estudante> response) {
@@ -135,9 +123,46 @@ public class EstudanteViewModel extends ViewModel {
         });
     }
 
+    public void atualizarEstudante(Estudante estudante) {
+        executorService.execute(() -> {
+            Call<Estudante> call = estudanteRepositoryUltils.atualizarEstudante(estudante.getId(), estudante);
+            call.enqueue(new Callback<Estudante>() {
+                @Override
+                public void onResponse(Call<Estudante> call, Response<Estudante> response) {
+                    if (response.isSuccessful() && response.body() != null) {
+                        Estudante atualizado = response.body();
+                        // Inicializar listas se null
+                        if (atualizado.getNotas() == null) atualizado.setNotas(new ArrayList<>());
+                        if (atualizado.getPresenca() == null) atualizado.setPresenca(new ArrayList<>());
+                        atualizarLista(); // Atualiza a lista geral
+                        selectedEstudanteLiveData.postValue(atualizado); // Atualiza o estudante selecionado
+                        Turma turma = new Turma(new ArrayList<>());
+                        double media = turma.calcularMedia(atualizado);
+                        double frequencia = turma.calcularFrequencia(atualizado);
+                        String situacao = (media >= 7.0 && frequencia >= 75.0) ? "Aprovado" : "Reprovado";
+
+                        mediaLiveData.postValue(media);
+                        frequenciaLiveData.postValue(frequencia);
+                        situacaoLiveData.postValue(situacao);
+                        cadastroSucessoLiveData.postValue(true);
+                    } else {
+                        errorLiveData.postValue("Erro ao atualizar estudante: " + response.code() + ", Mensagem: " + response.message());
+                        cadastroSucessoLiveData.postValue(false);
+                    }
+                }
+
+                @Override
+                public void onFailure(Call<Estudante> call, Throwable t) {
+                    errorLiveData.postValue("Erro ao atualizar estudante: " + t.getMessage());
+                    cadastroSucessoLiveData.postValue(false);
+                }
+            });
+        });
+    }
+
     public void criarEstudante(Estudante estudante) {
         executorService.execute(() -> {
-            Call<Estudante> call = repository.criarEstudante(estudante);
+            Call<Estudante> call = estudanteRepositoryUltils.criarEstudante(estudante);
             call.enqueue(new Callback<Estudante>() {
                 @Override
                 public void onResponse(Call<Estudante> call, Response<Estudante> response) {
@@ -161,7 +186,7 @@ public class EstudanteViewModel extends ViewModel {
 
     public void deletarEstudante(int id) {
         executorService.execute(() -> {
-            Call<Void> call = repository.deletarEstudante(id);
+            Call<Void> call = estudanteRepositoryUltils.deletarEstudante(id);
             call.enqueue(new Callback<Void>() {
                 @Override
                 public void onResponse(Call<Void> call, Response<Void> response) {
@@ -180,6 +205,61 @@ public class EstudanteViewModel extends ViewModel {
         });
     }
 
+    public void adicionarFrequencia(int id, boolean presente) {
+        executorService.execute(() -> {
+            Call<Estudante> call = estudanteRepositoryUltils.buscarEstudantePorId(id);
+            call.enqueue(new Callback<Estudante>() {
+                @Override
+                public void onResponse(Call<Estudante> call, Response<Estudante> response) {
+                    if (response.isSuccessful() && response.body() != null) {
+                        Estudante estudante = response.body();
+                        // Inicializar listas se null
+                        List<Boolean> presencas = estudante.getPresenca() != null ? new ArrayList<>(estudante.getPresenca()) : new ArrayList<>();
+                        presencas.add(presente);
+                        estudante.setPresenca(presencas);
+                        atualizarEstudante(estudante);
+                    } else {
+                        errorLiveData.postValue("Estudante não encontrado: " + response.code());
+                        cadastroSucessoLiveData.postValue(false);
+                    }
+                }
+
+                @Override
+                public void onFailure(Call<Estudante> call, Throwable t) {
+                    errorLiveData.postValue("Erro ao buscar estudante: " + t.getMessage());
+                    cadastroSucessoLiveData.postValue(false);
+                }
+            });
+        });
+    }
+
+    public void adicionarNota(int id, double nota) {
+        executorService.execute(() -> {
+            Call<Estudante> call = estudanteRepositoryUltils.buscarEstudantePorId(id);
+            call.enqueue(new Callback<Estudante>() {
+                @Override
+                public void onResponse(Call<Estudante> call, Response<Estudante> response) {
+                    if (response.isSuccessful() && response.body() != null) {
+                        Estudante estudante = response.body();
+                        // Inicializar listas se null
+                        List<Double> notas = estudante.getNotas() != null ? new ArrayList<>(estudante.getNotas()) : new ArrayList<>();
+                        notas.add(nota);
+                        estudante.setNotas(notas);
+                        atualizarEstudante(estudante);
+                    } else {
+                        errorLiveData.postValue("Estudante não encontrado: " + response.code());
+                        cadastroSucessoLiveData.postValue(false);
+                    }
+                }
+
+                @Override
+                public void onFailure(Call<Estudante> call, Throwable t) {
+                    errorLiveData.postValue("Erro ao buscar estudante: " + t.getMessage());
+                    cadastroSucessoLiveData.postValue(false);
+                }
+            });
+        });
+    }
     private void clearSelectedData() {
         selectedEstudanteLiveData.postValue(null);
         mediaLiveData.postValue(0.0);
@@ -187,30 +267,11 @@ public class EstudanteViewModel extends ViewModel {
         situacaoLiveData.postValue("N/A");
     }
 
-    private static OkHttpClient obterOkHttpClientInseguro() {
-        try {
-            final TrustManager[] trustAllCerts = new TrustManager[]{
-                    new X509TrustManager() {
-                        @Override public void checkClientTrusted(java.security.cert.X509Certificate[] chain, String authType) {}
-                        @Override public void checkServerTrusted(java.security.cert.X509Certificate[] chain, String authType) {}
-                        @Override public java.security.cert.X509Certificate[] getAcceptedIssuers() { return new java.security.cert.X509Certificate[]{}; }
-                    }
-            };
-            final SSLContext sslContext = SSLContext.getInstance("SSL");
-            sslContext.init(null, trustAllCerts, new java.security.SecureRandom());
-            final SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
-            OkHttpClient.Builder builder = new OkHttpClient.Builder();
-            builder.sslSocketFactory(sslSocketFactory, (X509TrustManager)trustAllCerts[0]);
-            builder.hostnameVerifier((hostname, session) -> true);
-            return builder.build();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
     @Override
     protected void onCleared() {
-        executorService.shutdownNow();
+        if (!executorService.isShutdown()) {
+            executorService.shutdownNow();
+        }
         super.onCleared();
     }
 }
