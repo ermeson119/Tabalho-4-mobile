@@ -13,6 +13,7 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 import com.example.tabalho4.R;
 import com.example.tabalho4.databinding.FragmentDadosEstudanteBinding;
@@ -20,8 +21,6 @@ import com.example.tabalho4.modelView.EstudanteViewModel;
 import com.example.tabalho4.models.entity.Estudante;
 
 public class DadosEstudanteFragment extends Fragment {
-
-    private static final String TAG = "DadosEstudanteFragment";
     private FragmentDadosEstudanteBinding binding;
     private EstudanteViewModel viewModel;
     private TextView textNome, textIdade, textMedia, textFrequencia, textSituacao;
@@ -57,7 +56,6 @@ public class DadosEstudanteFragment extends Fragment {
             }
         }
 
-        // Configurar botões
         buttonAdicionarNota.setOnClickListener(v -> {
             AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
             builder.setTitle("Adicionar Nota");
@@ -72,11 +70,9 @@ public class DadosEstudanteFragment extends Fragment {
                         Toast.makeText(requireContext(), "Nota deve estar entre 0 e 10", Toast.LENGTH_SHORT).show();
                         return;
                     }
-                    Log.d(TAG, "Solicitando adição de nota: " + nota + " para estudante ID: " + estudanteId);
                     viewModel.adicionarNota(estudanteId, nota);
                 } catch (NumberFormatException e) {
                     Toast.makeText(requireContext(), "Nota inválida", Toast.LENGTH_SHORT).show();
-                    Log.e(TAG, "Erro ao parsear nota: " + e.getMessage());
                 }
             });
             builder.setNegativeButton("Cancelar", (dialog, which) -> dialog.cancel());
@@ -88,11 +84,9 @@ public class DadosEstudanteFragment extends Fragment {
             builder.setTitle("Adicionar Frequência");
             builder.setMessage("O estudante estava presente?");
             builder.setPositiveButton("Sim", (dialog, which) -> {
-                Log.d(TAG, "Solicitando adição de frequência (presente) para estudante ID: " + estudanteId);
                 viewModel.adicionarFrequencia(estudanteId, true);
             });
             builder.setNegativeButton("Não", (dialog, which) -> {
-                Log.d(TAG, "Solicitando adição de frequência (ausente) para estudante ID: " + estudanteId);
                 viewModel.adicionarFrequencia(estudanteId, false);
             });
             builder.show();
@@ -102,7 +96,7 @@ public class DadosEstudanteFragment extends Fragment {
             if (estudanteId != -1) {
                 viewModel.deletarEstudante(estudanteId);
                 Toast.makeText(requireContext(), "Estudante deletado", Toast.LENGTH_SHORT).show();
-                Navigation.findNavController(v).navigate(R.id.nav_home);
+                Navigation.findNavController(v).navigate(R.id.action_dados_estudante_to_home);
             }
         });
 
@@ -111,45 +105,34 @@ public class DadosEstudanteFragment extends Fragment {
             if (estudante != null) {
                 textNome.setText("Nome: " + (estudante.getNome() != null ? estudante.getNome() : "N/A"));
                 textIdade.setText("Idade: " + (estudante.getIdade() != null ? estudante.getIdade() : "N/A"));
-                Log.d(TAG, "Estudante atualizado na UI: " + estudante.getNome());
             }
         });
 
         viewModel.getMedia().observe(getViewLifecycleOwner(), media -> {
             textMedia.setText("Média: " + (media != null && media != 0.0 ? String.format("%.2f", media) : "N/A"));
-            Log.d(TAG, "Média atualizada: " + media);
         });
 
         viewModel.getFrequencia().observe(getViewLifecycleOwner(), freq -> {
             textFrequencia.setText("Frequência: " + (freq != null && freq != 0.0 ? String.format("%.2f%%", freq) : "N/A"));
-            Log.d(TAG, "Frequência atualizada: " + freq);
         });
 
         viewModel.getSituacao().observe(getViewLifecycleOwner(), situacao -> {
             textSituacao.setText("Situação: " + (situacao != null ? situacao : "N/A"));
-            Log.d(TAG, "Situação atualizada: " + situacao);
         });
 
         viewModel.getError().observe(getViewLifecycleOwner(), error -> {
             if (error != null) {
                 Toast.makeText(requireContext(), error, Toast.LENGTH_SHORT).show();
-                Log.e(TAG, "Erro recebido: " + error);
-            }
-        });
-
-        viewModel.getCadastroSucesso().observe(getViewLifecycleOwner(), sucesso -> {
-            if (sucesso != null) {
-                if (sucesso) {
-                    Toast.makeText(requireContext(), "Atualização realizada com sucesso", Toast.LENGTH_SHORT).show();
-                    Log.d(TAG, "Atualização bem-sucedida");
-                } else {
-                    Toast.makeText(requireContext(), "Falha ao atualizar estudante", Toast.LENGTH_SHORT).show();
-                    Log.e(TAG, "Falha na atualização");
-                }
             }
         });
 
         return root;
+    }
+
+    @Override
+    public void onViewCreated(@NonNull View view, Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        NavController navController = Navigation.findNavController(view);
     }
 
     @Override

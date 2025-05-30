@@ -19,7 +19,6 @@ import com.example.tabalho4.models.entity.EstudanteAdapter;
 import java.util.ArrayList;
 
 public class HomeFragment extends Fragment {
-
     private FragmentHomeBinding binding;
     private EstudanteViewModel viewModel;
     private EstudanteAdapter adapter;
@@ -36,7 +35,7 @@ public class HomeFragment extends Fragment {
         adapter = new EstudanteAdapter(new ArrayList<>(), estudante -> {
             Bundle bundle = new Bundle();
             bundle.putInt("estudanteId", estudante.getId());
-            Navigation.findNavController(root).navigate(R.id.nav_dados_estudante, bundle);
+            Navigation.findNavController(root).navigate(R.id.action_home_to_dados_estudante, bundle);
             viewModel.estudanteSelecionadoId(estudante.getId());
         });
         recyclerView.setAdapter(adapter);

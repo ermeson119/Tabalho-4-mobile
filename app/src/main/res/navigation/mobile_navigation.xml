@@ -7,7 +7,13 @@
     <fragment
         android:id="@+id/nav_home"
         android:name="com.example.tabalho4.ui.home.HomeFragment"
-        android:label="Listagem de Alunos" />
+        android:label="Listagem de Alunos">
+        <action
+            android:id="@+id/action_home_to_dados_estudante"
+            app:destination="@id/nav_dados_estudante"
+            app:popUpTo="@id/nav_home"
+            app:popUpToInclusive="false" />
+    </fragment>
 
     <fragment
         android:id="@+id/nav_dados_estudante"
@@ -17,6 +23,11 @@
             android:name="estudanteId"
             app:argType="integer"
             android:defaultValue="-1" />
+        <action
+            android:id="@+id/action_dados_estudante_to_home"
+            app:destination="@id/nav_home"
+            app:popUpTo="@id/nav_home"
+            app:popUpToInclusive="true" />
     </fragment>
 
     <fragment
