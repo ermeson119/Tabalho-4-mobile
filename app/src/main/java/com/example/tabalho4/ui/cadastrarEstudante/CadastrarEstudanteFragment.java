@@ -22,7 +22,7 @@ public class CadastrarEstudanteFragment extends Fragment {
 
     private EditText editNome, editIdade;
     private Button buttonCadastrar;
-    private com.example.tabalho4.modelView.EstudanteViewModel viewModel;
+    private EstudanteViewModel viewModel;
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {

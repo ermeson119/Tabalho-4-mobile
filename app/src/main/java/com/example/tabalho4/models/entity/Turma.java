@@ -7,6 +7,9 @@ public class Turma {
 
     private List<Estudante> estudantes;
 
+    public Turma() {
+    }
+
     public Turma(List<Estudante> estudantes) {
         this.estudantes = estudantes != null ? estudantes : new ArrayList<>();
     }
