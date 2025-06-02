@@ -50,10 +50,10 @@ public class EstatisticaEstudantesFragment extends Fragment {
             if (estudantes != null && !estudantes.isEmpty()) {
                 estatisticaEstudantesViewModel.atualizarEstatisticas(estudantes);
             } else {
-                textMediaTurma.setText("Média Geral da Turma: N/A");
-                textMediaIdade.setText("Média de Idade: N/A");
-                textMaior.setText("Maior Média: N/A");
-                textMenor.setText("Menor Média: N/A");
+                textMediaTurma.setText("Média Geral da Turma: ");
+                textMediaIdade.setText("Média de Idade: ");
+                textMaior.setText("Maior Média: ");
+                textMenor.setText("Menor Média: ");
                 adapterAprovados.updateEstudantes(new ArrayList<>());
                 adapterReprovados.updateEstudantes(new ArrayList<>());
             }
@@ -63,7 +63,7 @@ public class EstatisticaEstudantesFragment extends Fragment {
             if (media != null && media != 0.0) {
                 textMediaTurma.setText(String.format("Média Geral da Turma: %.2f", media));
             } else {
-                textMediaTurma.setText("Média Geral da Turma: N/A");
+                textMediaTurma.setText("Média Geral da Turma: ");
             }
         });
 
@@ -71,7 +71,7 @@ public class EstatisticaEstudantesFragment extends Fragment {
             if (idade != null && idade != 0.0) {
                 textMediaIdade.setText(String.format("Média de Idade: %.2f", idade));
             } else {
-                textMediaIdade.setText("Média de Idade: N/A");
+                textMediaIdade.setText("Média de Idade: ");
             }
         });
 
@@ -79,7 +79,7 @@ public class EstatisticaEstudantesFragment extends Fragment {
             if (maior != null) {
                 textMaior.setText(String.format("Maior Média: %s", maior.getNome()));
             } else {
-                textMaior.setText("Maior Média: N/A");
+                textMaior.setText("Maior Média: ");
             }
         });
 
@@ -87,7 +87,7 @@ public class EstatisticaEstudantesFragment extends Fragment {
             if (menor != null) {
                 textMenor.setText(String.format("Menor Média: %s", menor.getNome()));
             } else {
-                textMenor.setText("Menor Média: N/A");
+                textMenor.setText("Menor Média: ");
             }
         });
 

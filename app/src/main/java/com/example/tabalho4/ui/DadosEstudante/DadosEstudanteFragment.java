@@ -98,21 +98,21 @@ public class DadosEstudanteFragment extends Fragment {
 
         dadosEstudanteViewModel.getEstudante().observe(getViewLifecycleOwner(), estudante -> {
             if (estudante != null) {
-                textNome.setText("Nome: " + (estudante.getNome() != null ? estudante.getNome() : "N/A"));
-                textIdade.setText("Idade: " + (estudante.getIdade() != null ? estudante.getIdade() : "N/A"));
+                textNome.setText("Nome: " + (estudante.getNome() != null ? estudante.getNome() : ""));
+                textIdade.setText("Idade: " + (estudante.getIdade() != null ? estudante.getIdade() : ""));
             }
         });
 
         dadosEstudanteViewModel.getMedia().observe(getViewLifecycleOwner(), media -> {
-            textMedia.setText("Média: " + (media != null && media != 0.0 ? String.format("%.2f", media) : "N/A"));
+            textMedia.setText("Média: " + (media != null && media != 0.0 ? String.format("%.2f", media) : ""));
         });
 
         dadosEstudanteViewModel.getFrequencia().observe(getViewLifecycleOwner(), freq -> {
-            textFrequencia.setText("Frequência: " + (freq != null && freq != 0.0 ? String.format("%.2f%%", freq) : "N/A"));
+            textFrequencia.setText("Frequência: " + (freq != null && freq != 0.0 ? String.format("%.2f%%", freq) : ""));
         });
 
         dadosEstudanteViewModel.getSituacao().observe(getViewLifecycleOwner(), situacao -> {
-            textSituacao.setText("Situação: " + (situacao != null ? situacao : "N/A"));
+            textSituacao.setText("Situação: " + (situacao != null ? situacao : ""));
         });
 
         dadosEstudanteViewModel.getError().observe(getViewLifecycleOwner(), error -> {

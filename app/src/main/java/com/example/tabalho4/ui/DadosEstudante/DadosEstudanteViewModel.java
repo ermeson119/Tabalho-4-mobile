@@ -78,9 +78,6 @@ public class DadosEstudanteViewModel extends ViewModel {
                         mediaLiveData.postValue(media);
                         frequenciaLiveData.postValue(frequencia);
                         situacaoLiveData.postValue(situacao);
-                    } else {
-                        errorLiveData.postValue("Estudante não encontrado");
-                        limparDados();
                     }
                 }
 
@@ -105,10 +102,6 @@ public class DadosEstudanteViewModel extends ViewModel {
                         notas.add(nota);
                         estudante.setNotas(notas);
                         atualizarEstudante(estudante, "adicionar_nota");
-                    } else {
-                        errorLiveData.postValue("Estudante não encontrado: " + response.code());
-                        cadastroSucessoLiveData.postValue(false);
-                        operacaoTipoLiveData.postValue("adicionar_nota");
                     }
                 }
 
@@ -134,10 +127,6 @@ public class DadosEstudanteViewModel extends ViewModel {
                         presencas.add(presente);
                         estudante.setPresenca(presencas);
                         atualizarEstudante(estudante, "adicionar_frequencia");
-                    } else {
-                        errorLiveData.postValue("Estudante não encontrado: " + response.code());
-                        cadastroSucessoLiveData.postValue(false);
-                        operacaoTipoLiveData.postValue("adicionar_frequencia");
                     }
                 }
 
@@ -162,10 +151,6 @@ public class DadosEstudanteViewModel extends ViewModel {
                             homeViewModel.atualizarLista();
                         }
                         cadastroSucessoLiveData.postValue(true);
-                        operacaoTipoLiveData.postValue("deletar");
-                    } else {
-                        errorLiveData.postValue("Erro ao deletar estudante: " + response.code());
-                        cadastroSucessoLiveData.postValue(false);
                         operacaoTipoLiveData.postValue("deletar");
                     }
                 }
@@ -203,10 +188,6 @@ public class DadosEstudanteViewModel extends ViewModel {
                         frequenciaLiveData.postValue(frequencia);
                         situacaoLiveData.postValue(situacao);
                         cadastroSucessoLiveData.postValue(true);
-                        operacaoTipoLiveData.postValue(tipoOperacao);
-                    } else {
-                        errorLiveData.postValue("Erro ao atualizar estudante: " + response.code() + ", Mensagem: " + response.message());
-                        cadastroSucessoLiveData.postValue(false);
                         operacaoTipoLiveData.postValue(tipoOperacao);
                     }
                 }

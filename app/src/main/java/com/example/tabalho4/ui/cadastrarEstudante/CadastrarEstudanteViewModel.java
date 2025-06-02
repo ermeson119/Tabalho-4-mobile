@@ -49,9 +49,6 @@ public class CadastrarEstudanteViewModel extends ViewModel {
                 public void onResponse(Call<Estudante> call, Response<Estudante> response) {
                     if (response.isSuccessful()) {
                         cadastroSucessoLiveData.postValue(true);
-                    } else {
-                        errorLiveData.postValue("Erro ao cadastrar estudante");
-                        cadastroSucessoLiveData.postValue(false);
                     }
                 }
 
