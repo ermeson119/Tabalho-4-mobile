@@ -13,14 +13,12 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import com.example.tabalho4.R;
 import com.example.tabalho4.databinding.FragmentHomeBinding;
-import com.example.tabalho4.modelView.EstudanteViewModel;
-import com.example.tabalho4.models.entity.Estudante;
 import com.example.tabalho4.models.entity.EstudanteAdapter;
 import java.util.ArrayList;
 
 public class HomeFragment extends Fragment {
     private FragmentHomeBinding binding;
-    private EstudanteViewModel viewModel;
+    private HomeFragmentViewModel homeViewModel;
     private EstudanteAdapter adapter;
 
     @Override
@@ -28,7 +26,7 @@ public class HomeFragment extends Fragment {
         binding = FragmentHomeBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
 
-        viewModel = new ViewModelProvider(requireActivity()).get(EstudanteViewModel.class);
+        homeViewModel = new ViewModelProvider(this).get(HomeFragmentViewModel.class);
 
         RecyclerView recyclerView = root.findViewById(R.id.recyclerView);
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
@@ -36,11 +34,10 @@ public class HomeFragment extends Fragment {
             Bundle bundle = new Bundle();
             bundle.putInt("estudanteId", estudante.getId());
             Navigation.findNavController(root).navigate(R.id.action_home_to_dados_estudante, bundle);
-            viewModel.estudanteSelecionadoId(estudante.getId());
         });
         recyclerView.setAdapter(adapter);
 
-        viewModel.getEstudantes().observe(getViewLifecycleOwner(), estudantes -> {
+        homeViewModel.getEstudantes().observe(getViewLifecycleOwner(), estudantes -> {
             if (estudantes != null) {
                 adapter.updateEstudantes(estudantes);
             } else {
@@ -48,7 +45,7 @@ public class HomeFragment extends Fragment {
             }
         });
 
-        viewModel.getError().observe(getViewLifecycleOwner(), error -> {
+        homeViewModel.getError().observe(getViewLifecycleOwner(), error -> {
             if (error != null) {
                 Toast.makeText(getContext(), error, Toast.LENGTH_SHORT).show();
             }
@@ -60,7 +57,6 @@ public class HomeFragment extends Fragment {
     @Override
     public void onDestroyView() {
         super.onDestroyView();
-        viewModel.atualizarLista();
         binding = null;
     }
 }

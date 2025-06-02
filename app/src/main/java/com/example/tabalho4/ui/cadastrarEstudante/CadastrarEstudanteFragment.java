@@ -12,17 +12,13 @@ import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.Navigation;
 import com.example.tabalho4.R;
-import com.example.tabalho4.models.entity.Estudante;
-import com.example.tabalho4.modelView.EstudanteViewModel;
-
-import java.util.ArrayList;
-
+import com.example.tabalho4.ui.home.HomeFragmentViewModel;
 
 public class CadastrarEstudanteFragment extends Fragment {
-
     private EditText editNome, editIdade;
     private Button buttonCadastrar;
-    private EstudanteViewModel viewModel;
+    private CadastrarEstudanteViewModel viewModel;
+    private HomeFragmentViewModel homeViewModel;
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -32,7 +28,8 @@ public class CadastrarEstudanteFragment extends Fragment {
         editIdade = root.findViewById(R.id.editIdade);
         buttonCadastrar = root.findViewById(R.id.buttonCadastrar);
 
-        viewModel = new ViewModelProvider(requireActivity()).get(EstudanteViewModel.class);
+        viewModel = new ViewModelProvider(this).get(CadastrarEstudanteViewModel.class);
+        homeViewModel = new ViewModelProvider(requireActivity()).get(HomeFragmentViewModel.class);
 
         buttonCadastrar.setOnClickListener(v -> {
             String nome = editNome.getText().toString().trim();
@@ -45,26 +42,21 @@ public class CadastrarEstudanteFragment extends Fragment {
 
             try {
                 int idade = Integer.parseInt(idadeStr);
-                Estudante estudante = new Estudante();
-                estudante.setNome(nome);
-                estudante.setIdade(idade);
-                estudante.setNotas(new ArrayList<>());
-                estudante.setPresenca(new ArrayList<>());
-
-                viewModel.criarEstudante(estudante);
-
-                viewModel.getCadastroSucesso().observe(getViewLifecycleOwner(), sucesso -> {
-                    if (sucesso != null) {
-                        if (sucesso) {
-                            Toast.makeText(requireContext(), "Estudante cadastrado com sucesso", Toast.LENGTH_SHORT).show();
-                            Navigation.findNavController(v).navigate(R.id.nav_home); // Volta para a listagem
-                        } else {
-                            Toast.makeText(requireContext(), "Falha ao cadastrar estudante", Toast.LENGTH_SHORT).show();
-                        }
-                    }
-                });
+                viewModel.criarEstudante(nome, idade);
             } catch (NumberFormatException e) {
                 Toast.makeText(requireContext(), "Idade deve ser um número válido", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        viewModel.getCadastroSucesso().observe(getViewLifecycleOwner(), sucesso -> {
+            if (sucesso != null) {
+                if (sucesso) {
+                    homeViewModel.atualizarLista();
+                    Toast.makeText(requireContext(), "Estudante cadastrado com sucesso", Toast.LENGTH_SHORT).show();
+                    Navigation.findNavController(root).navigate(R.id.nav_home);
+                } else {
+                    Toast.makeText(requireContext(), "Falha ao cadastrar estudante", Toast.LENGTH_SHORT).show();
+                }
             }
         });
 

@@ -2,7 +2,6 @@ package com.example.tabalho4.ui.DadosEstudante;
 
 import android.app.AlertDialog;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -13,16 +12,15 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
-import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 import com.example.tabalho4.R;
 import com.example.tabalho4.databinding.FragmentDadosEstudanteBinding;
-import com.example.tabalho4.modelView.EstudanteViewModel;
-import com.example.tabalho4.models.entity.Estudante;
+import com.example.tabalho4.ui.home.HomeFragmentViewModel;
 
 public class DadosEstudanteFragment extends Fragment {
     private FragmentDadosEstudanteBinding binding;
-    private EstudanteViewModel viewModel;
+    private DadosEstudanteViewModel dadosEstudanteViewModel;
+    private HomeFragmentViewModel homeViewModel;
     private TextView textNome, textIdade, textMedia, textFrequencia, textSituacao;
     private Button buttonAdicionarNota, buttonAdicionarFrequencia, buttonDeletar;
     private int estudanteId = -1;
@@ -32,9 +30,10 @@ public class DadosEstudanteFragment extends Fragment {
         binding = FragmentDadosEstudanteBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
 
-        viewModel = new ViewModelProvider(requireActivity()).get(EstudanteViewModel.class);
+        homeViewModel = new ViewModelProvider(requireActivity()).get(HomeFragmentViewModel.class);
+        dadosEstudanteViewModel = new ViewModelProvider(this).get(DadosEstudanteViewModel.class);
+        dadosEstudanteViewModel.setViewModelStoreOwner(requireActivity()); // Configurar HomeFragmentViewModel
 
-        // Inicializar elementos UI
         textNome = root.findViewById(R.id.textNome);
         textIdade = root.findViewById(R.id.textIdade);
         textMedia = root.findViewById(R.id.textMedia);
@@ -44,13 +43,12 @@ public class DadosEstudanteFragment extends Fragment {
         buttonAdicionarFrequencia = root.findViewById(R.id.buttonAdicionarFrequencia);
         buttonDeletar = root.findViewById(R.id.buttonDeletar);
 
-        // Obter ID do aluno dos argumentos
         if (getArguments() != null) {
             estudanteId = getArguments().getInt("estudanteId", -1);
             if (estudanteId != -1) {
-                viewModel.estudanteSelecionadoId(estudanteId);
+                dadosEstudanteViewModel.carregarEstudante(estudanteId);
             } else {
-                Toast.makeText(requireContext(), "Nenhum aluno selecionado", Toast.LENGTH_SHORT).show();
+                Toast.makeText(requireContext(), "Nenhum estudante selecionado", Toast.LENGTH_SHORT).show();
                 Navigation.findNavController(root).navigate(R.id.nav_home);
                 return root;
             }
@@ -70,7 +68,7 @@ public class DadosEstudanteFragment extends Fragment {
                         Toast.makeText(requireContext(), "Nota deve estar entre 0 e 10", Toast.LENGTH_SHORT).show();
                         return;
                     }
-                    viewModel.adicionarNota(estudanteId, nota);
+                    dadosEstudanteViewModel.adicionarNota(estudanteId, nota);
                 } catch (NumberFormatException e) {
                     Toast.makeText(requireContext(), "Nota inválida", Toast.LENGTH_SHORT).show();
                 }
@@ -84,55 +82,67 @@ public class DadosEstudanteFragment extends Fragment {
             builder.setTitle("Adicionar Frequência");
             builder.setMessage("O estudante estava presente?");
             builder.setPositiveButton("Sim", (dialog, which) -> {
-                viewModel.adicionarFrequencia(estudanteId, true);
+                dadosEstudanteViewModel.adicionarFrequencia(estudanteId, true);
             });
             builder.setNegativeButton("Não", (dialog, which) -> {
-                viewModel.adicionarFrequencia(estudanteId, false);
+                dadosEstudanteViewModel.adicionarFrequencia(estudanteId, false);
             });
             builder.show();
         });
 
         buttonDeletar.setOnClickListener(v -> {
             if (estudanteId != -1) {
-                viewModel.deletarEstudante(estudanteId);
-                Toast.makeText(requireContext(), "Estudante deletado", Toast.LENGTH_SHORT).show();
-                Navigation.findNavController(v).navigate(R.id.action_dados_estudante_to_home);
+                dadosEstudanteViewModel.deletarEstudante(estudanteId);
             }
         });
 
-        // Observar LiveData
-        viewModel.getSelectedEstudante().observe(getViewLifecycleOwner(), estudante -> {
+        dadosEstudanteViewModel.getEstudante().observe(getViewLifecycleOwner(), estudante -> {
             if (estudante != null) {
                 textNome.setText("Nome: " + (estudante.getNome() != null ? estudante.getNome() : "N/A"));
                 textIdade.setText("Idade: " + (estudante.getIdade() != null ? estudante.getIdade() : "N/A"));
             }
         });
 
-        viewModel.getMedia().observe(getViewLifecycleOwner(), media -> {
+        dadosEstudanteViewModel.getMedia().observe(getViewLifecycleOwner(), media -> {
             textMedia.setText("Média: " + (media != null && media != 0.0 ? String.format("%.2f", media) : "N/A"));
         });
 
-        viewModel.getFrequencia().observe(getViewLifecycleOwner(), freq -> {
+        dadosEstudanteViewModel.getFrequencia().observe(getViewLifecycleOwner(), freq -> {
             textFrequencia.setText("Frequência: " + (freq != null && freq != 0.0 ? String.format("%.2f%%", freq) : "N/A"));
         });
 
-        viewModel.getSituacao().observe(getViewLifecycleOwner(), situacao -> {
+        dadosEstudanteViewModel.getSituacao().observe(getViewLifecycleOwner(), situacao -> {
             textSituacao.setText("Situação: " + (situacao != null ? situacao : "N/A"));
         });
 
-        viewModel.getError().observe(getViewLifecycleOwner(), error -> {
+        dadosEstudanteViewModel.getError().observe(getViewLifecycleOwner(), error -> {
             if (error != null) {
                 Toast.makeText(requireContext(), error, Toast.LENGTH_SHORT).show();
             }
         });
 
-        return root;
-    }
+        dadosEstudanteViewModel.getCadastroSucesso().observe(getViewLifecycleOwner(), sucesso -> {
+            if (sucesso != null && sucesso) {
+                dadosEstudanteViewModel.getOperacaoTipo().observe(getViewLifecycleOwner(), tipo -> {
+                    if (tipo != null) {
+                        switch (tipo) {
+                            case "adicionar_nota":
+                                Toast.makeText(requireContext(), "Nota adicionada com sucesso", Toast.LENGTH_SHORT).show();
+                                break;
+                            case "adicionar_frequencia":
+                                Toast.makeText(requireContext(), "Frequência adicionada com sucesso", Toast.LENGTH_SHORT).show();
+                                break;
+                            case "deletar":
+                                Toast.makeText(requireContext(), "Estudante deletado", Toast.LENGTH_SHORT).show();
+                                Navigation.findNavController(root).navigate(R.id.action_dados_estudante_to_home);
+                                break;
+                        }
+                    }
+                });
+            }
+        });
 
-    @Override
-    public void onViewCreated(@NonNull View view, Bundle savedInstanceState) {
-        super.onViewCreated(view, savedInstanceState);
-        NavController navController = Navigation.findNavController(view);
+        return root;
     }
 
     @Override

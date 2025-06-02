@@ -12,18 +12,14 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import com.example.tabalho4.R;
 import com.example.tabalho4.databinding.FragmentEstatisticaEstudantesBinding;
-import com.example.tabalho4.modelView.EstudanteViewModel;
-import com.example.tabalho4.modelView.TurmaViewModel;
-import com.example.tabalho4.models.entity.Estudante;
+import com.example.tabalho4.ui.home.HomeFragmentViewModel;
 import com.example.tabalho4.models.entity.EstudanteAdapter;
-
 import java.util.ArrayList;
 
 public class EstatisticaEstudantesFragment extends Fragment {
-
     private FragmentEstatisticaEstudantesBinding binding;
-    private TurmaViewModel turmaViewModel;
-    private EstudanteViewModel estudanteViewModel;
+    private EstatisticaEstudantesViewModel estatisticaEstudantesViewModel;
+    private HomeFragmentViewModel estudanteViewModel;
     private TextView textMediaTurma, textMediaIdade, textMaior, textMenor;
     private EstudanteAdapter adapterAprovados, adapterReprovados;
 
@@ -32,8 +28,8 @@ public class EstatisticaEstudantesFragment extends Fragment {
         binding = FragmentEstatisticaEstudantesBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
 
-        estudanteViewModel = new ViewModelProvider(requireActivity()).get(EstudanteViewModel.class);
-        turmaViewModel = new ViewModelProvider(requireActivity()).get(TurmaViewModel.class);
+        estudanteViewModel = new ViewModelProvider(requireActivity()).get(HomeFragmentViewModel.class);
+        estatisticaEstudantesViewModel = new ViewModelProvider(this).get(EstatisticaEstudantesViewModel.class);
 
         textMediaTurma = root.findViewById(R.id.textMediaTurma);
         textMediaIdade = root.findViewById(R.id.textMediaIdade);
@@ -50,10 +46,9 @@ public class EstatisticaEstudantesFragment extends Fragment {
         adapterReprovados = new EstudanteAdapter(new ArrayList<>(), null);
         recyclerReprovados.setAdapter(adapterReprovados);
 
-        // Observar a lista de estudantes do EstudanteViewModel
         estudanteViewModel.getEstudantes().observe(getViewLifecycleOwner(), estudantes -> {
             if (estudantes != null && !estudantes.isEmpty()) {
-                turmaViewModel.atualizarEstatisticas(estudantes);
+                estatisticaEstudantesViewModel.atualizarEstatisticas(estudantes);
             } else {
                 textMediaTurma.setText("Média Geral da Turma: N/A");
                 textMediaIdade.setText("Média de Idade: N/A");
@@ -64,8 +59,7 @@ public class EstatisticaEstudantesFragment extends Fragment {
             }
         });
 
-        // Observe LiveData from TurmaViewModel
-        turmaViewModel.getMediaTurma().observe(getViewLifecycleOwner(), media -> {
+        estatisticaEstudantesViewModel.getMediaTurma().observe(getViewLifecycleOwner(), media -> {
             if (media != null && media != 0.0) {
                 textMediaTurma.setText(String.format("Média Geral da Turma: %.2f", media));
             } else {
@@ -73,7 +67,7 @@ public class EstatisticaEstudantesFragment extends Fragment {
             }
         });
 
-        turmaViewModel.getMediaIdade().observe(getViewLifecycleOwner(), idade -> {
+        estatisticaEstudantesViewModel.getMediaIdade().observe(getViewLifecycleOwner(), idade -> {
             if (idade != null && idade != 0.0) {
                 textMediaIdade.setText(String.format("Média de Idade: %.2f", idade));
             } else {
@@ -81,7 +75,7 @@ public class EstatisticaEstudantesFragment extends Fragment {
             }
         });
 
-        turmaViewModel.getMaiorMedia().observe(getViewLifecycleOwner(), maior -> {
+        estatisticaEstudantesViewModel.getMaiorMedia().observe(getViewLifecycleOwner(), maior -> {
             if (maior != null) {
                 textMaior.setText(String.format("Maior Média: %s", maior.getNome()));
             } else {
@@ -89,7 +83,7 @@ public class EstatisticaEstudantesFragment extends Fragment {
             }
         });
 
-        turmaViewModel.getMenorMedia().observe(getViewLifecycleOwner(), menor -> {
+        estatisticaEstudantesViewModel.getMenorMedia().observe(getViewLifecycleOwner(), menor -> {
             if (menor != null) {
                 textMenor.setText(String.format("Menor Média: %s", menor.getNome()));
             } else {
@@ -97,7 +91,7 @@ public class EstatisticaEstudantesFragment extends Fragment {
             }
         });
 
-        turmaViewModel.getAprovados().observe(getViewLifecycleOwner(), aprovados -> {
+        estatisticaEstudantesViewModel.getAprovados().observe(getViewLifecycleOwner(), aprovados -> {
             if (aprovados != null && !aprovados.isEmpty()) {
                 adapterAprovados.updateEstudantes(aprovados);
             } else {
@@ -105,7 +99,7 @@ public class EstatisticaEstudantesFragment extends Fragment {
             }
         });
 
-        turmaViewModel.getReprovados().observe(getViewLifecycleOwner(), reprovados -> {
+        estatisticaEstudantesViewModel.getReprovados().observe(getViewLifecycleOwner(), reprovados -> {
             if (reprovados != null && !reprovados.isEmpty()) {
                 adapterReprovados.updateEstudantes(reprovados);
             } else {
@@ -113,7 +107,7 @@ public class EstatisticaEstudantesFragment extends Fragment {
             }
         });
 
-        turmaViewModel.getError().observe(getViewLifecycleOwner(), error -> {
+        estatisticaEstudantesViewModel.getError().observe(getViewLifecycleOwner(), error -> {
             if (error != null) {
                 textMediaTurma.setText("Erro ao carregar dados");
                 textMediaIdade.setText("Erro ao carregar dados");
